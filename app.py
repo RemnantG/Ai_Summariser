@@ -1,118 +1,189 @@
 import streamlit as st
-import pypdf
-from google import genai
+from backend import DocumentAssistant  # Our separated logic brain
 
-# Page Configuration & Theme Match
+# 1. Page Configuration for a dark, immersive feel
 st.set_page_config(
-    page_title="DocuMind AI", 
-    page_icon="🤖",
-    layout="centered" # Clean, focused reading layout
+    page_title="DocuMind Seer's Sanctum",
+    page_icon="🔮",
+    layout="centered"  # Keeps the focus centralized on the crystal ball
 )
 
-# Custom Styling for polished elements
+# 2. Inject Custom CSS for Theme and Crystal Ball Visualization
 st.markdown("""
-    <style>
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 24px;
+<style>
+    /* 1. Global Page Background (Deep Obsidian/Velvet Purple) */
+    .stApp {
+        background: radial-gradient(circle at center, #11052C 0%, #05010B 100%);
+        color: #E6E1F1 !important;
+        font-family: 'Garamond', serif;
     }
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: #F8FAFC;
-        border-radius: 4px 4px 0px 0px;
-        padding-left: 16px;
-        padding-right: 16px;
-        font-weight: 600;
+
+    /* 2. Mystical Header Styling */
+    .witch-title {
+        color: #B298E6;
+        font-family: 'Garamond', serif;
+        font-size: 3rem;
+        font-weight: 800;
+        text-align: center;
+        text-shadow: 0px 0px 15px rgba(178, 152, 230, 0.6);
+        margin-bottom: -15px;
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #EFF6FF !important;
-        border-bottom: 2px solid #3B82F6 !important;
+    .witch-subtitle {
+        color: #8C6FD1;
+        text-align: center;
+        font-style: italic;
+        margin-bottom: 2rem;
     }
-    </style>
+
+    /* 3. THE CRYSTAL BALL VISUALIZATION */
+    .crystal-ball-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: -30px;
+        margin-bottom: 30px;
+    }
+    .crystal-ball {
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle at 30% 30%, #4C1D95 0%, #1D0A3D 60%, #0A0214 100%);
+        border-radius: 50%;
+        box-shadow: 
+            0 0 40px rgba(178, 152, 230, 0.6), /* Outer Glow */
+            inset 0 0 30px rgba(255, 255, 255, 0.1); /* Inner Reflection */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        overflow: hidden; /* Contains the text within the ball */
+        border: 2px solid #2D1452;
+    }
+    /* Pulsing Light inside the ball */
+    .crystal-ball::before {
+        content: '';
+        position: absolute;
+        width: 150%;
+        height: 150%;
+        background: radial-gradient(circle, rgba(178, 152, 230, 0.2) 0%, rgba(0,0,0,0) 70%);
+        animation: pulse 4s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.5; }
+    }
+
+    /* Text displayed *inside* the crystal ball */
+    .ball-content {
+        color: #FFFFFF;
+        font-size: 0.9rem;
+        padding: 40px;
+        text-align: center;
+        z-index: 1; /* Puts text above the pulse effect */
+        font-family: 'Garamond', serif;
+        overflow-y: auto; /* Adds scroll if summary is long */
+        max-height: 80%; /* Limits text height */
+    }
+
+    /* 4. Thematic Inputs and Text */
+    .stTextInput>div>div>input {
+        background-color: #1A0B35;
+        color: #FFFFFF;
+        border: 1px solid #6B21A8;
+        border-radius: 20px;
+        font-family: 'Garamond', serif;
+    }
+    stMarkdown, stCaption {
+        color: #B298E6;
+        font-family: 'Garamond', serif;
+    }
+
+</style>
 """, unsafe_allow_html=True)
 
-# Main Title Headers
-st.markdown("# 🧠 DocuMind AI")
-st.markdown("##### *Your Intelligent Document Workspace*")
+# Instantiate the backend brain
+seer = DocumentAssistant()
+
+# 3. Main Sanctum Layout
+st.markdown('<div class="witch-title">🔮 The All-Knowing Seer</div>', unsafe_allow_html=True)
+st.markdown('<div class="witch-subtitle">Feed manuscripts into the void; peer deep into their contained truths.</div>', unsafe_allow_html=True)
 st.write("---")
 
-# 1. File Upload Area (Now with a progress/status indicator)
-uploaded_file = st.file_uploader("📂 Drop your PDF or TXT document here", type=["txt", "pdf"])
+# The Altar (File Input)
+with st.sidebar:
+    st.markdown("### 📜 The Sacrificial Altar")
+    st.caption("Place your mundane document upon the altar to initiate the ritual.")
+    uploaded_file = st.file_uploader("", type=["txt", "pdf"], label_visibility="collapsed")
+    st.markdown("---")
+    st.markdown("### ⚙️ Dark Arcane Settings")
+    st.caption("Powered by the Whispering Gemini Matrix.")
 
-if uploaded_file is not None:
-    # Extract text based on file type
-    document_text = ""
-    with st.spinner("🔄 Reading document layers..."):
-        if uploaded_file.type == "text/plain":
-            document_text = uploaded_file.read().decode("utf-8")
-        elif uploaded_file.type == "application/pdf":
-            reader = pypdf.PdfReader(uploaded_file)
-            for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    document_text += page_text + "\n"
+# Logic flow remains clean because we separated it!
+if uploaded_file is None:
+    # Empty State with visual pointer
+    st.markdown(
+        "<div style='text-align: center; color: #6B21A8; font-style: italic; margin-top: 5rem;'>"
+        "👈 The crystal sits dark. Place your manuscript upon the sidebar altar."
+        "</div>", 
+        unsafe_allow_html=True
+    )
+else:
+    # Read text using backend brain
+    with st.spinner("🔄 Chanting incantations to read the runes..."):
+        document_text = seer.extract_text_from_stream(uploaded_file, uploaded_file.type)
 
     if document_text:
-        # Success pill with file statistics
-        st.toast(f"Successfully loaded {uploaded_file.name}!", icon="✅")
+        # Success status
+        st.toast(f"The text has been consumed by the entity.", icon="👁️")
         
-        # 2. Modern Tabbed Workspace Layout
-        tab1, tab2 = st.tabs(["📋 Executive Summary", "💬 Interactive Chat Explorer"])
+        # 4. Peer into the Crystal Ball (Summary)
+        st.subheader("📋 Glimpse the Essence (Summary)")
 
-        # --- TAB 1: EXECUTIVE SUMMARY ---
-        with tab1:
-            st.markdown("### Document Summary")
+        # Generate (and cache) summary using backend brain
+        @st.cache_data
+        def get_cached_summary(text):
+            # We slightly alter the *voice* instructions right here in app.py
+            witch_voice_prompt = f"""
+            You are an all-knowing ancient witch speaking through a glowing crystal ball. 
+            Summarize the core truth of the following context precisely but with a slightly cryptic, elite, mystical tone.
+            Use labels like '🌙 The Core Intentions' and '✨ Key Strategic Manifestations'.
             
-            @st.cache_data
-            def generate_summary(text):
-                prompt = f"""
-                You are an elite research analyst. Provide a beautifully structured, executive summary of this document.
-                Include:
-                - **The Big Picture:** A brief 2-sentence overview.
-                - **Key Strategic Insights:** 3-5 high-impact bullet points.
-                Context: {text}
-                """
-                client = genai.Client()
-                response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-                return response.text
+            Context: {text}
+            """
+            # Pass the themed prompt into our modular brain's API method
+            return seer.generate_summary(witch_voice_prompt)
 
-            with st.spinner("Analyzing text patterns..."):
-                summary_text = generate_summary(document_text)
-                st.markdown(summary_text)
-            
-            st.write("---")
-            # Added Feature: Export/Download Summary Utility
-            st.download_button(
-                label="📥 Download Summary as .txt",
-                data=summary_text,
-                file_name=f"Summary_{uploaded_file.name}.txt",
-                mime="text/plain"
-            )
+        summary_text = get_cached_summary(document_text)
 
-        # --- TAB 2: INTERACTIVE CHAT EXPLORER ---
-        with tab2:
-            st.markdown("### Conversational Engine")
-            st.caption("Ask specific questions, cross-examine data, or request translations of sections.")
+        # RENDER THE CRYSTAL BALL and inject the summary text inside it
+        st.markdown(f"""
+            <div class="crystal-ball-container">
+                <div class="crystal-ball">
+                    <div class="ball-content">
+                        {summary_text}
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.write("---")
+
+        # 5. Question & Answer Interface
+        st.subheader("💬 Speak into the Void (Q&A)")
+        user_question = st.text_input("Whisper your query:", placeholder="e.g., What are the core conclusions?")
+        
+        if user_question:
+            # Re-theme the QA prompt to maintain the voice
+            witch_qa_prompt = f"""
+            You are an all-knowing ancient witch. Answer the user's question using ONLY the facts present in the text context. 
+            Speak with precise, elite, and slightly mystical language. If the answer is missing, state that the spirits are silent on that matter.
             
-            # Text input for user query
-            user_question = st.text_input("Ask a question about this document:", placeholder="What are the main metrics or conclusions?")
+            Context: {document_text}
+            Question: {user_question}
+            """
             
-            if user_question:
-                # Render the user's message using Streamlit's native chat bubble UI
-                with st.chat_message("user"):
-                    st.write(user_question)
+            with st.spinner("Scrying the temporal mists..."):
+                answer = seer.answer_question(document_text, witch_qa_prompt)
                 
-                # Generate and render AI response
-                with st.chat_message("assistant"):
-                    with st.spinner("Scanning file matrix..."):
-                        qa_prompt = f"""
-                        Answer the user's question using only the facts present in the text context.
-                        Context: {document_text}
-                        Question: {user_question}
-                        """
-                        client = genai.Client()
-                        response = client.models.generate_content(model='gemini-2.5-flash', contents=qa_prompt)
-                        st.write(response.text)
-else:
-    # Onboard screen when no file is present
-    st.info("👋 Welcome! To begin, please drag and drop or upload a document file above.")
+                with st.chat_message("assistant", avatar="🧙‍♀️"):
+                    st.write(answer)
